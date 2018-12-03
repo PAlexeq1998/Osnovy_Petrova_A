@@ -23,7 +23,6 @@ int main(){
     while(ggetline(in, line[size])){
         ++size;
     }
-    --size;
     while(size >= 0){
         printf("%s\n", line[size]);
         --size;
