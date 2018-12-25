@@ -1,147 +1,239 @@
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
-int strlen(const char * arr){
-    int len = 0;
-	for(len = 0; arr[len] != 0; ++len);
-	return len;
-}
+// описание структуры
+typedef struct flat_t {
+	char address[19];
+	double price;
+	int rooms;
+	char surname[14];
+	char name[14];
+	char patronymic[14];
+} flat_t;
 
-int getline(FILE* in, char *buffer){
-	char c;
-	int i = 0;
-	buffer[i] = 0;
-	while ((c = fgetc(in)) != EOF && c != '\n'){
-		 buffer[i] = c;
-		 ++i;
+// добавлеине в базу новой квартиры
+void add_flat(flat_t **flats, int *n, int *capacity) {
+	if (*flats == NULL) {
+		*flats = (flat_t *)malloc(sizeof(flat_t)); // если квартир ещё не было, то создаём 1 квартиру
+		*capacity = 1;
 	}
-	buffer[i] = 0;
-	if (c == EOF){
-	  return 0;
+	else if (*n + 1 >= *capacity) {
+		*capacity *= 2;
+		*flats = (flat_t *)realloc(*flats, *capacity * sizeof(flat_t)); // иначе увеличиваем максимальный размер базы в два раза, если новая запись не вмещается
 	}
-	return 1;
+
+	// вводим новую запись
+	printf("Enter address: ");
+	scanf("%s", &((*flats)[*n].address));
+	printf("Enter price: ");
+	scanf("%lf", &(*flats)[*n].price);
+	printf("Enter number of rooms: ");
+	scanf("%d", &(*flats)[*n].rooms);
+	printf("Enter surname: ");
+	scanf("%s", (*flats)[*n].surname);
+	printf("Enter name: ");
+	scanf("%s", (*flats)[*n].name);
+	printf("Enter patronymic: ");
+	scanf("%s", (*flats)[*n].patronymic);
+
+	(*n)++; // увеличиваем число элементов в массиве
 }
 
-int strequal(const char* a, const char *b){
-    if(strlen(a) != strlen(b)){
-		return 0;
+// удаление квартиры из базы
+void remove_flat(flat_t *flats, int *n) {
+	if (!*n) {
+		printf("No flats was added!\n");
+		return;
 	}
-	else{
-	   int i;
-	   for(i = 0; a[i] != 0 && b[i] != 0; ++i){
-		 if(a[i] != b[i]){
-			return 0;
-		 }
-	   }
+
+	flat_t flat; // создаём квартиру для поиска и удаления
+
+	printf("Enter address: ");
+	scanf("%s", flat.address);
+	printf("Enter price: ");
+	scanf("%lf", &flat.price);
+	printf("Enter number of rooms: ");
+	scanf("%d", &flat.rooms);
+	printf("Enter surname: ");
+	scanf("%s", flat.surname);
+	printf("Enter name: ");
+	scanf("%s", flat.name);
+	printf("Enter patronymic: ");
+	scanf("%s", flat.patronymic);
+	int count = 0; // количество найденных квартир
+
+	for (int i = 0; i < *n; i++) {
+		if (!strcmp(flat.address, flats[i].address) && flat.price == flats[i].price && flat.rooms == flats[i].rooms &&
+			!strcmp(flat.surname, flats[i].surname) && !strcmp(flat.name, flats[i].name) && !strcmp(flat.patronymic, flats[i].patronymic)) { // если нашли квартиру в базе
+			(*n)--; // уменьшаем число квартир в базе
+			count++; // количество удалённых
+
+			for (int j = i; j < *n; j++)
+				flats[j] = flats[j + 1]; // сдвигаем элементы влево на 1
+		}
 	}
-	return 1;
+
+	// выводим нужное сообщение
+	if (count == 0)
+		printf("No flats found in database...\n");
+	else
+		printf("Removed\n");
 }
 
-//‰ÂÙ‡ÈÌ˚
-typedef struct{
-	char file_name[32];//ËÏÂÌ‡ Ù‡ÈÎÓ‚
-	char define_name[32];//‡ÎË‡Ò ‰ÂÙ‡ÈÌ‡
-	char value[32];//ÁÌ‡˜ÂÌËÂ ‡ÎË‡Ò‡
-}Define;
-
-
-//ÍÓÔËÛÂÏ
-void strcpy(char *a, const char *b){
-	int i;
-	for(i = 0; b[i] != 0; ++i){
-		a[i] = b[i];
+// вывод базы, отсортированной по адресу по алфавиту
+void print_by_address(flat_t *flats, int n) {
+	if (!n) {
+		printf("No flats was added!\n");
+		return;
 	}
-	a[i] = 0;
-}
 
-int find(Define* defines, int *cnt, const char* val){
-	for(int i = 0; i < *cnt; ++i){
-	   if(strequal(defines[i].define_name, val)){
-			return i;
-	   }
+	// сортировка
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n - 1 - i; j++) {
+			if (strcmp(flats[j].address, flats[j + 1].address) > 0) {
+				flat_t tmp = flats[j];
+				flats[j] = flats[j + 1];
+				flats[j + 1] = tmp;
+			}
+		}
 	}
-	return -1;
+
+	printf("\n\n");
+	printf("+--------------------------------------------------------------------------------------+\n");
+	printf("|                            Flats after sorting by address                            |\n");
+	printf("+-------------------+-------+-------+----------------+----------------+----------------+\n");
+	printf("|      Address      | Price | Rooms |     Surname    |      Name      |   Patronymic   |\n");
+	printf("+-------------------+-------+-------+----------------+----------------+----------------+\n");
+
+	for (int i = 0; i < n; i++)
+		printf("| %17s | %5.2lf | %5d | %14s | %14s | %14s |\n", flats[i].address, flats[i].price, flats[i].rooms, flats[i].surname, flats[i].name, flats[i].patronymic);
+
+	printf("+-------------------+-------+-------+----------------+----------------+----------------+\n");
 }
 
-//Ô‡ÒÂ ÒÚÓÍË
-void parceLine(Define* defines, int *cnt, FILE* result, const char* fname, const char* buffer){
-		 FILE* ss = fopen("tmp","w");
-		 fprintf(ss, "%s", buffer);
-		 fclose(ss);
-		 ss = fopen("tmp","r");
-		 char word[32];//Í‡‰ÊÓÂ ÒÎÓ‚Ó ÍÓ‰‡
-		 while(!feof(ss) && fscanf(ss, "%s",word) == 1){
-			 if(strequal(word,"#define")){
-				 fprintf(result, "%s ", word);
-				 strcpy(defines[*cnt].file_name, fname);
-				 fscanf(ss, "%s",defines[*cnt].define_name);
-				 fprintf(result, "%s ", defines[*cnt].define_name);
-				 getline(ss, defines[*cnt].value);
-				 fprintf(result, "%s ", defines[*cnt].value);
-				 (*cnt)++;
-				 break;
-			 }
-			 else{	//ÂÒÎË ÌÂ Ï‡ÍÓÒ, ÚÓ ÔÓ‚ÂˇÂÏ ÒÎÓ‚‡
-				int res = find(defines, cnt, word); 
-				if(res != -1){
-					fprintf(result, "%s ", defines[res].value);
-				}
-				else{
-				   fprintf(result, "%s ", word);
-				}
-			 }
-		 }
-		 fclose(ss);
+// вывод базы отсортированной по цене по убыванию
+void print_by_price(flat_t *flats, int n) {
+	if (!n) {
+		printf("No flats was added!\n");
+		return;
+	}
+
+	// сортировка
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n - 1 - i; j++) {
+			if (flats[j].price < flats[j + 1].price) {
+				flat_t tmp = flats[j];
+				flats[j] = flats[j + 1];
+				flats[j + 1] = tmp;
+			}
+		}
+	}
+
+	printf("\n\n");
+	printf("+-------------------+-------+-------+----------------+----------------+----------------+\n");
+	printf("|                             Flats after sorting by price                             |\n");
+	printf("+-------------------+-------+-------+----------------+----------------+----------------+\n");
+	printf("|      Address      | Price | Rooms |     Surname    |      Name      |   Patronymic   |\n");
+	printf("+-------------------+-------+-------+----------------+----------------+----------------+\n");
+
+	for (int i = 0; i < n; i++)
+		printf("| %17s | %5.2lf | %5d | %14s | %14s | %14s |\n", flats[i].address, flats[i].price, flats[i].rooms, flats[i].surname, flats[i].name, flats[i].patronymic);
+
+	printf("+-------------------+-------+-------+----------------+----------------+----------------+\n");
 }
 
-//ÍÓÔËÛÂÏ ËÁ ‡ ‚ b
-void copyFiles(const char *a, const char *b){
-	FILE *aa = fopen(a, "r");
-	FILE *bb = fopen(b, "w");
-	char ch;
-	while ((ch = fgetc(aa)) != EOF)
-      fputc(ch, bb);
-	fclose(aa);
-	fclose(bb);
-}
-//Ò˜ËÚ˚‚‡ÂÏ ËÁ Ù‡ÈÎ‡
-void readFromFile(Define* defines, int *cnt, const char* fname){
-	 FILE* in = fopen(fname, "r");
-	 char buffer[128];//·ÛÙÂ ‰Îˇ Ò˜ËÚ˚‚‡ÌËˇ
-	 FILE* result = fopen("rtmp", "w");//ÂÁÛÎ¸ÚËÛ˛˘ËÈ ·ÛÙÙÂ
-	 while(getline(in, buffer)){
-		 if(buffer[0] != 0){
-			 parceLine(defines, cnt, result, fname, buffer);
-			 fprintf(result, "\n");
-		 }
-	 }
-	 //Á‡ÔËÒ˚‚‡ÂÏ Ó·‡·ÓÚ‡ÌÌ˚È Ù‡ÈÎ Ó·‡ÚÌÓ
-	 fclose(in);
-	 fclose(result);
-	 copyFiles("rtmp", fname);
-	 
+// поиск по имени
+void find_by_name(flat_t *flats, int n) {
+	if (!n) {
+		printf("No flats was added!\n");
+		return;
+	}
+
+	char name[14];
+	printf("Enter part of name: ");
+	scanf("%s", &name); // вводим имя (или его часть)
+	int count = 0; // число найденных
+
+	printf("\n\n");
+	printf("+--------------------------------------------------------------------------------------+\n");
+	printf("|                                 Search flat by name                                  |\n");
+	printf("+-------------------+-------+-------+----------------+----------------+----------------+\n");
+	printf("|      Address      | Price | Rooms |     Surname    |      Name      |   Patronymic   |\n");
+	printf("+-------------------+-------+-------+----------------+----------------+----------------+\n");
+
+	for (int i = 0; i < n; i++) {
+		if (strstr(flats[i].name, name)) { // если такая подстрока есть в имени
+			printf("| %17s | %5.2lf | %5d | %14s | %14s | %14s |\n", flats[i].address, flats[i].price, flats[i].rooms, flats[i].surname, flats[i].name, flats[i].patronymic);
+			count++; // то выводим квартиру и увеличиваем счётчик выведенных
+		}
+	}
+
+	if (count == 0) // если ничего не нашли, выводим сообщение об этом
+		printf("|                                    No flats found                                    |\n");
+
+	printf("+-------------------+-------+-------+----------------+----------------+----------------+\n");
 }
 
-int main(){
-  int files_cnt;//ÍÓÎË˜ÂÒÚ‚Ó Ù‡ÈÎÓ‚
-  printf("Files: "); 
-  scanf("%d",&files_cnt);
-  //ËÏÂÌ‡ Ù‡ÈÎÓ‚
-  char file_names[10][32];//ÌÂ ÏÓÊÂÚ ·˚Ú¸ ·ÓÎ¸¯Â 10 Ù‡ÈÎÓ‚ 
-  printf("Enter %d file names:\n", files_cnt);
-  for(int i = 0; i < files_cnt; ++i){
-	 scanf("%s", file_names[i]);
-  }
-  //‚ÒÂ ‰ÂÙ‡ÈÌ˚
-  Define defines[20];//ÌÂ ÏÓÊÂÚ ·˚Ú¸ ·ÓÎ¸¯Â 20 ‰ÂÙ‡ÈÌÓ‚
-  int defines_cnt = 0;//ÍÓÎË˜ÂÒÚ‚Ó ‰ÂÙ‡ÈÌÓ‚
-  
-  for(unsigned i = 0; i < files_cnt; ++i){
-	  readFromFile(defines, &defines_cnt, file_names[i]);
-	 
-  }
-  //‚˚‚Ó‰ËÏ ·‡ÁÛ ‚ Ù‡ÈÎ
-  FILE *ff = fopen("data.bin", "wb");
-  fwrite(defines, sizeof(Define), defines_cnt, ff);
-  fclose(ff);
+int main() {
+	int exit = 0;
+	flat_t *flats = NULL;
+	int n = 0;
+	int capacity = 1;
 
+	do {
+		system("cls");
+		printf("What do you want to do?\n");
+		printf("1: Add flat\n");
+		printf("2: Remove flat\n");
+		printf("3: Print by address\n");
+		printf("4: Print by price\n");
+		printf("5: Find by name\n");
+		printf("6: Exit\n");
+		printf(">");
+
+		char buf[256];
+		int variant;
+		scanf("%s", buf);
+
+		while (sscanf(buf, "%d", &variant) != 1 || variant < 1 || variant > 6) {
+			printf("Incorrect variant. Try again: ");
+			scanf("%s", buf);
+		}
+
+		switch (variant) {
+		case 1:
+			add_flat(&flats, &n, &capacity);
+			break;
+
+		case 2:
+			remove_flat(flats, &n);
+			break;
+
+		case 3:
+			print_by_address(flats, n);
+			break;
+
+		case 4:
+			print_by_price(flats, n);
+			break;
+
+		case 5:
+			find_by_name(flats, n);
+			break;
+
+		case 6:
+			exit = 1;
+			break;
+		}
+
+		if (!exit) {
+			printf("\nPress enter to back to menu: ");
+			getchar();
+			getchar();
+		}
+	} while (!exit);
+
+	return 0;
 }
+
